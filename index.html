@@ -1,0 +1,1010 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>Genomics testing service performance</title>
+
+  <style>
+    :root {
+      --nhs-blue: #005eb8;
+      --nhs-dark-blue: #003087;
+      --text: #212b32;
+      --secondary: #425563;
+      --border: #d8dde0;
+      --panel: #f0f4f5;
+
+      --good: #007f3b;
+      --delay: #ffb81c;
+      --significant: #d5281b;
+      --unavailable: #4c6272;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+      background: transparent;
+      color: var(--text);
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 16px;
+      line-height: 1.5;
+    }
+
+    .widget {
+      width: 100%;
+      background: #fff;
+      border: 1px solid var(--border);
+    }
+
+    .demo-banner {
+      padding: 10px 18px;
+      background: #ffdd00;
+      color: #212b32;
+      font-weight: 700;
+    }
+
+    .header {
+      padding: 20px;
+      background: var(--panel);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .header h2 {
+      margin: 0 0 6px;
+      font-size: 1.5rem;
+      line-height: 1.25;
+    }
+
+    .header p {
+      margin: 0;
+      color: var(--secondary);
+    }
+
+    .loading {
+      padding: 24px 20px;
+    }
+
+    .service-list {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .service {
+      border-bottom: 1px solid var(--border);
+    }
+
+    .service:last-child {
+      border-bottom: 0;
+    }
+
+    .service-summary {
+      display: grid;
+      grid-template-columns: minmax(180px, 1fr) minmax(220px, 1fr) 48px;
+      width: 100%;
+      padding: 0;
+      margin: 0;
+      border: 0;
+      background: #fff;
+      color: var(--text);
+      text-align: left;
+      font: inherit;
+      cursor: pointer;
+    }
+
+    .service-summary:hover {
+      background: #f7f7f7;
+    }
+
+    .service-summary:focus-visible {
+      position: relative;
+      z-index: 2;
+      outline: 4px solid #ffdd00;
+      outline-offset: -4px;
+      box-shadow: inset 0 0 0 2px #212b32;
+    }
+
+    .service-name {
+      display: flex;
+      align-items: center;
+      padding: 16px;
+      font-weight: 700;
+    }
+
+    .service-status {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 16px;
+      border-left: 1px solid var(--border);
+    }
+
+    .status-dot {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      flex: 0 0 auto;
+      background: var(--unavailable);
+    }
+
+    .service[data-status="good"] .status-dot {
+      background: var(--good);
+    }
+
+    .service[data-status="delay"] .status-dot {
+      background: var(--delay);
+      border: 1px solid #594800;
+    }
+
+    .service[data-status="significant"] .status-dot {
+      background: var(--significant);
+    }
+
+    .service[data-status="unavailable"] .status-dot {
+      background: var(--unavailable);
+    }
+
+    .status-text {
+      font-weight: 700;
+    }
+
+    .service[data-status="good"] .status-text {
+      color: #00662f;
+    }
+
+    .service[data-status="significant"] .status-text {
+      color: #a11f17;
+    }
+
+    .arrow {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--nhs-blue);
+      font-size: 2rem;
+      transition: transform 0.2s ease;
+    }
+
+    .service-summary[aria-expanded="true"] .arrow {
+      transform: rotate(90deg);
+    }
+
+    .detail {
+      padding: 18px 20px 20px;
+      border-top: 1px solid var(--border);
+      background: var(--panel);
+    }
+
+    .detail[hidden] {
+      display: none;
+    }
+
+    .detail p {
+      max-width: 65ch;
+      margin: 0;
+    }
+
+    .detail p + p {
+      margin-top: 10px;
+    }
+
+    .performance-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px 28px;
+      margin-top: 16px;
+    }
+
+    .metric {
+      min-width: 130px;
+    }
+
+    .metric-value {
+      display: block;
+      font-size: 1.5rem;
+      font-weight: 700;
+    }
+
+    .metric-label {
+      display: block;
+      color: var(--secondary);
+      font-size: 0.9rem;
+    }
+
+    .footer {
+      padding: 14px 20px;
+      border-top: 1px solid var(--border);
+      color: var(--secondary);
+      font-size: 0.9rem;
+    }
+
+    .footer p {
+      margin: 0;
+    }
+
+    .error {
+      padding: 20px;
+      border-left: 5px solid #d5281b;
+      background: #f0f4f5;
+    }
+
+    .error strong {
+      display: block;
+      margin-bottom: 5px;
+    }
+
+    @media (max-width: 560px) {
+
+      .service-summary {
+        grid-template-columns: 1fr 44px;
+      }
+
+      .service-name {
+        grid-column: 1;
+        padding-bottom: 4px;
+      }
+
+      .service-status {
+        grid-column: 1;
+        padding-top: 4px;
+        border-left: 0;
+      }
+
+      .arrow {
+        grid-column: 2;
+        grid-row: 1 / span 2;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .arrow {
+        transition: none;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <section
+    class="widget"
+    aria-labelledby="genomics-status-heading"
+  >
+
+    <div class="demo-banner">
+      Demonstration only – this is not live service performance data
+    </div>
+
+    <header class="header">
+
+      <h2 id="genomics-status-heading">
+        Genomics testing service performance
+      </h2>
+
+      <p>
+        Current performance information for our genomics testing services.
+      </p>
+
+    </header>
+
+    <div
+      id="service-container"
+      aria-live="polite"
+    >
+      <p class="loading">
+        Loading current service performance…
+      </p>
+    </div>
+
+    <footer class="footer">
+
+      <p>
+        <strong>Last updated:</strong>
+        <span id="last-updated">
+          Loading…
+        </span>
+      </p>
+
+    </footer>
+
+  </section>
+
+
+  <script>
+    (function () {
+      "use strict";
+
+
+      /*
+       * ===========================================================
+       * DATA SOURCE
+       * ===========================================================
+       *
+       * index.html and genomics-status.csv are in the same
+       * GitHub repository/folder.
+       */
+
+      var DATA_URL = "./genomics-status.csv";
+
+
+      var container =
+        document.getElementById("service-container");
+
+      var lastUpdated =
+        document.getElementById("last-updated");
+
+
+      /*
+       * ===========================================================
+       * CSV PARSER
+       * ===========================================================
+       */
+
+      function parseCSVRow(row) {
+
+        var values = [];
+        var value = "";
+        var inQuotes = false;
+
+        for (var i = 0; i < row.length; i++) {
+
+          var character = row[i];
+          var next = row[i + 1];
+
+          if (
+            character === '"' &&
+            inQuotes &&
+            next === '"'
+          ) {
+
+            value += '"';
+            i++;
+
+          } else if (character === '"') {
+
+            inQuotes = !inQuotes;
+
+          } else if (
+            character === "," &&
+            !inQuotes
+          ) {
+
+            values.push(value);
+            value = "";
+
+          } else {
+
+            value += character;
+
+          }
+        }
+
+        values.push(value);
+
+        return values;
+      }
+
+
+      function parseCSV(text) {
+
+        var rows =
+          text.trim().split(/\r?\n/);
+
+        if (rows.length < 2) {
+          return [];
+        }
+
+        var headings =
+          parseCSVRow(rows[0]);
+
+        return rows
+          .slice(1)
+          .filter(function (row) {
+            return row.trim() !== "";
+          })
+          .map(function (row) {
+
+            var values =
+              parseCSVRow(row);
+
+            var item = {};
+
+            headings.forEach(
+              function (heading, index) {
+
+                item[heading.trim()] =
+                  values[index] !== undefined
+                    ? values[index].trim()
+                    : "";
+
+              }
+            );
+
+            return item;
+
+          });
+      }
+
+
+      /*
+       * ===========================================================
+       * ESCAPE / VALIDATION
+       * ===========================================================
+       */
+
+      var allowedStatuses = [
+        "good",
+        "delay",
+        "significant",
+        "unavailable"
+      ];
+
+
+      function normaliseStatus(status) {
+
+        status =
+          String(status || "")
+            .toLowerCase()
+            .trim();
+
+        if (
+          allowedStatuses.indexOf(status) === -1
+        ) {
+          return "unavailable";
+        }
+
+        return status;
+      }
+
+
+      /*
+       * ===========================================================
+       * BUILD SERVICE ROW
+       * ===========================================================
+       */
+
+      function buildService(service, index) {
+
+        var status =
+          normaliseStatus(service.status);
+
+        var id =
+          "genomics-service-" + index;
+
+
+        var item =
+          document.createElement("li");
+
+        item.className = "service";
+
+        item.setAttribute(
+          "data-status",
+          status
+        );
+
+
+        var button =
+          document.createElement("button");
+
+        button.type = "button";
+        button.className = "service-summary";
+
+        button.setAttribute(
+          "aria-expanded",
+          "false"
+        );
+
+        button.setAttribute(
+          "aria-controls",
+          id + "-detail"
+        );
+
+
+        /*
+         * SERVICE NAME
+         */
+
+        var name =
+          document.createElement("span");
+
+        name.className = "service-name";
+
+        name.textContent =
+          service.service ||
+          "Unnamed service";
+
+
+        /*
+         * STATUS
+         */
+
+        var statusContainer =
+          document.createElement("span");
+
+        statusContainer.className =
+          "service-status";
+
+
+        var dot =
+          document.createElement("span");
+
+        dot.className = "status-dot";
+
+        dot.setAttribute(
+          "aria-hidden",
+          "true"
+        );
+
+
+        var statusText =
+          document.createElement("span");
+
+        statusText.className =
+          "status-text";
+
+        statusText.textContent =
+          service.status_text ||
+          "Information unavailable";
+
+
+        statusContainer.appendChild(dot);
+
+        statusContainer.appendChild(
+          statusText
+        );
+
+
+        /*
+         * ARROW
+         */
+
+        var arrow =
+          document.createElement("span");
+
+        arrow.className = "arrow";
+
+        arrow.setAttribute(
+          "aria-hidden",
+          "true"
+        );
+
+        arrow.textContent = "›";
+
+
+        button.appendChild(name);
+
+        button.appendChild(
+          statusContainer
+        );
+
+        button.appendChild(arrow);
+
+
+        /*
+         * EXPANDED DETAIL
+         */
+
+        var detail =
+          document.createElement("div");
+
+        detail.id = id + "-detail";
+        detail.className = "detail";
+        detail.hidden = true;
+
+
+        var description =
+          document.createElement("p");
+
+        description.textContent =
+          service.detail ||
+          "No additional information is currently available.";
+
+        detail.appendChild(description);
+
+
+        /*
+         * PERFORMANCE AND TARGET
+         */
+
+        if (
+          service.performance ||
+          service.target
+        ) {
+
+          var metrics =
+            document.createElement("div");
+
+          metrics.className =
+            "performance-grid";
+
+
+          if (service.performance) {
+
+            var performance =
+              document.createElement("div");
+
+            performance.className =
+              "metric";
+
+
+            var performanceValue =
+              document.createElement("span");
+
+            performanceValue.className =
+              "metric-value";
+
+            performanceValue.textContent =
+              service.performance + "%";
+
+
+            var performanceLabel =
+              document.createElement("span");
+
+            performanceLabel.className =
+              "metric-label";
+
+            performanceLabel.textContent =
+              "Currently within target";
+
+
+            performance.appendChild(
+              performanceValue
+            );
+
+            performance.appendChild(
+              performanceLabel
+            );
+
+            metrics.appendChild(
+              performance
+            );
+          }
+
+
+          if (service.target) {
+
+            var target =
+              document.createElement("div");
+
+            target.className = "metric";
+
+
+            var targetValue =
+              document.createElement("span");
+
+            targetValue.className =
+              "metric-value";
+
+            targetValue.textContent =
+              service.target + "%";
+
+
+            var targetLabel =
+              document.createElement("span");
+
+            targetLabel.className =
+              "metric-label";
+
+            targetLabel.textContent =
+              "Performance target";
+
+
+            target.appendChild(
+              targetValue
+            );
+
+            target.appendChild(
+              targetLabel
+            );
+
+            metrics.appendChild(target);
+          }
+
+
+          detail.appendChild(metrics);
+        }
+
+
+        /*
+         * EXPAND / COLLAPSE
+         */
+
+        button.addEventListener(
+          "click",
+          function () {
+
+            var isExpanded =
+              button.getAttribute(
+                "aria-expanded"
+              ) === "true";
+
+
+            button.setAttribute(
+              "aria-expanded",
+              isExpanded
+                ? "false"
+                : "true"
+            );
+
+
+            detail.hidden =
+              isExpanded;
+
+
+            window.setTimeout(
+              reportHeight,
+              20
+            );
+          }
+        );
+
+
+        item.appendChild(button);
+        item.appendChild(detail);
+
+        return item;
+      }
+
+
+      /*
+       * ===========================================================
+       * DISPLAY DATA
+       * ===========================================================
+       */
+
+      function displayServices(services) {
+
+        container.innerHTML = "";
+
+
+        var list =
+          document.createElement("ul");
+
+        list.className =
+          "service-list";
+
+
+        services.forEach(
+          function (service, index) {
+
+            list.appendChild(
+              buildService(
+                service,
+                index
+              )
+            );
+
+          }
+        );
+
+
+        container.appendChild(list);
+
+
+        updateLastUpdated(services);
+
+        reportHeight();
+      }
+
+
+      /*
+       * ===========================================================
+       * LAST UPDATED
+       * ===========================================================
+       */
+
+      function updateLastUpdated(services) {
+
+        var validDates =
+          services
+            .map(function (service) {
+
+              return new Date(
+                service.last_updated
+              );
+
+            })
+            .filter(function (date) {
+
+              return !isNaN(
+                date.getTime()
+              );
+
+            });
+
+
+        if (!validDates.length) {
+
+          lastUpdated.textContent =
+            "Not provided";
+
+          return;
+        }
+
+
+        var latestTimestamp =
+          Math.max.apply(
+            null,
+            validDates.map(
+              function (date) {
+                return date.getTime();
+              }
+            )
+          );
+
+
+        var latest =
+          new Date(latestTimestamp);
+
+
+        lastUpdated.textContent =
+          latest.toLocaleString(
+            "en-GB",
+            {
+              dateStyle: "long",
+              timeStyle: "short",
+              timeZone:
+                "Europe/London"
+            }
+          );
+      }
+
+
+      /*
+       * ===========================================================
+       * ERROR STATE
+       * ===========================================================
+       */
+
+      function showError() {
+
+        container.innerHTML = "";
+
+
+        var error =
+          document.createElement("div");
+
+        error.className = "error";
+
+
+        var heading =
+          document.createElement("strong");
+
+        heading.textContent =
+          "Current performance information is temporarily unavailable.";
+
+
+        var text =
+          document.createElement("span");
+
+        text.textContent =
+          " Please check again later.";
+
+
+        error.appendChild(heading);
+        error.appendChild(text);
+
+        container.appendChild(error);
+
+
+        lastUpdated.textContent =
+          "Unavailable";
+
+
+        reportHeight();
+      }
+
+
+      /*
+       * ===========================================================
+       * IFRAME AUTO HEIGHT
+       * ===========================================================
+       */
+
+      function reportHeight() {
+
+        if (window.parent === window) {
+          return;
+        }
+
+
+        window.parent.postMessage(
+          {
+            type:
+              "genomics-status-height",
+
+            height:
+              document.documentElement
+                .scrollHeight
+          },
+          "*"
+        );
+      }
+
+
+      /*
+       * ===========================================================
+       * LOAD CSV
+       * ===========================================================
+       *
+       * Date.now() helps prevent an old cached version of the CSV
+       * being shown while you're demonstrating data changes.
+       */
+
+      fetch(
+        DATA_URL +
+        "?update=" +
+        Date.now(),
+        {
+          cache: "no-store"
+        }
+      )
+
+        .then(function (response) {
+
+          if (!response.ok) {
+
+            throw new Error(
+              "CSV returned HTTP " +
+              response.status
+            );
+          }
+
+          return response.text();
+
+        })
+
+        .then(function (csv) {
+
+          var services =
+            parseCSV(csv);
+
+
+          if (!services.length) {
+
+            throw new Error(
+              "No service records found"
+            );
+          }
+
+
+          displayServices(
+            services
+          );
+
+        })
+
+        .catch(function (error) {
+
+          console.error(
+            "Genomics service feed error:",
+            error
+          );
+
+          showError();
+
+        });
+
+
+      window.addEventListener(
+        "load",
+        reportHeight
+      );
+
+
+      window.addEventListener(
+        "resize",
+        reportHeight
+      );
+
+    })();
+  </script>
+
+</body>
+</html>
