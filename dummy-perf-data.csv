@@ -1,6 +1,6 @@
 id,service,status,status_text,performance,target,detail,last_updated
-rare-disease,Rare disease testing,good,Good performance,84,90,Testing is currently operating within the expected service turnaround time.,02/11/2026 12:50
-cancer,Cancer genomic testing,delay,Some delays,62,90,Some cancer genomic tests are currently taking longer than usual. Urgent clinical pathways continue to be prioritised.,02/11/2026 12:50
-whole-genome,Whole genome sequencing,significant,Significant delays,85,85,Turnaround times are currently longer than the expected service standard. Please allow additional time for results.,02/11/2026 12:50
-pharmacogenomics,Pharmacogenomics,good,Good performance,76,90,Testing is currently operating within the expected service turnaround time.,02/11/2026 12:50
-prenatal,Prenatal genomic testing,good,Good performance,87,95,Testing is currently operating within the expected service turnaround time.,02/11/2026 12:50
+rare-disease,Rare disease testing,good,Good performance,70,90,Testing is currently operating within the expected service turnaround time.,02/11/2026 12:50
+cancer,Cancer genomic testing,delay,Some delays,82,90,Some cancer genomic tests are currently taking longer than usual. Urgent clinical pathways continue to be prioritised.,02/11/2026 12:50
+whole-genome,Whole genome sequencing,significant,Significant delays,80,85,Turnaround times are currently longer than the expected service standard. Please allow additional time for results.,02/11/2026 12:50
+pharmacogenomics,Pharmacogenomics,good,Good performance,89,90,Testing is currently operating within the expected service turnaround time.,02/11/2026 12:50
+prenatal,Prenatal genomic testing,good,Good performance,80,95,Testing is currently operating within the expected service turnaround time.,02/11/2026 12:50
